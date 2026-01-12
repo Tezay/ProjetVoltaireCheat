@@ -1,58 +1,34 @@
-# ProjetVoltaireCheat - _Si ça marche tant mieux si ça marche pas tant pis_
+# Projet Voltaire Cheat (2026)
 
-Extension prend la phrase du projet voltair, regarde dans reverso correcteur d’orthographe si elle est juste et affiche l'endroit de la faute si il y en a une.
+Fork du projet original de [MartinPELCAT](https://github.com/MartinPELCAT/ProjetVoltaireCheat), mis à jour et corrigé pour fonctionner avec les versions actuelles de Chrome.
 
-# Build
+## Installation
 
-Tu peux le build toi meme en faisant un yarn build à la racine.
-Il faut nodejs et npm pour le build.
-Sinon tu peux l'installer avec le build dejà fait avec le fichier extension.zip qui est au final juste le build zipper
+1. Téléchargez le fichier `extension.zip` depuis les Releases (ou clonez le repo et lancez `yarn build`).
+2. Dézippez le contenu.
+3. Ouvrez Chrome et allez sur `chrome://extensions/`.
+4. Activez le **Mode développeur** (en haut à droite).
+5. Cliquez sur **Charger l'extension non empaquetée** et sélectionnez le dossier `dist`.
+6. Epinglez l'extension.
 
-# Download
+## Utilisation
 
-<img width="921" alt="image" src="https://user-images.githubusercontent.com/35460122/221563442-c61bfe68-4e5d-43b2-9ead-f28cfe924b39.png">
+1. Allez sur le site Projet Voltaire et commencez un exercice.
+2. Cliquez sur l'icône de l'extension.
+3. Une carte de feedback apparaît en bas à gauche :
+   - **Vert** : La phrase est correcte (selon Reverso).
+   - **Rouge** : Une erreur est détectée, avec la correction proposée.
 
-<img width="767" alt="image" src="https://user-images.githubusercontent.com/35460122/221563745-91253f6e-657c-4d47-aeae-4d76143eee8e.png">
+## Build
 
-# Unzip
+Nécessite Node.js et Yarn.
 
-Unzip the file downloaded
+```bash
+yarn install
+cd src/popup && yarn install && cd ../..
+yarn build
+```
 
-<img width="762" alt="image" src="https://user-images.githubusercontent.com/35460122/221563910-af74ba80-99de-4d8c-b648-556d6250c152.png">
+## Licence
 
-Unzip the "extension.zip" file
-
-<img width="764" alt="image" src="https://user-images.githubusercontent.com/35460122/221564098-e238f0bc-5844-4881-8414-9d1c61b029e8.png">
-
-# Install
-
-En haut à droite d'un navigateur chromium (Chrome, Brave, ...)
-
-![image](https://user-images.githubusercontent.com/35460122/221564521-6b7e702d-ccf1-4c38-91af-85ad6b82291c.png)
-
-![image](https://user-images.githubusercontent.com/35460122/221564743-6bd6bdcb-3143-4e59-ace4-010079fc1aac.png)
-
-# Activer le mode développeur et cliquer sur "Load Unpack" / "Chargé l'extension non empaqueté"
-
-![image](https://user-images.githubusercontent.com/35460122/221565245-3ac9eebc-9392-44f0-9b50-576890d8cc47.png)
-
-Trouvez le dossier "dist" qui était dans le fichier extension.zip
-
-<img width="1119" alt="image" src="https://user-images.githubusercontent.com/35460122/221565571-b2e67dc4-0b53-49a8-9394-311d23ed5264.png">
-
-Mettez l'extension en "PIN"
-
-![image](https://user-images.githubusercontent.com/35460122/221565978-7e5e7ca2-8350-49a7-9457-aa6d55259b60.png)
-
-## Utilisation.
-
-Une fois que vous êtes en train de faire un test ou un exercice, cliquez sur l'icon de l’extention.
-FYI: Il faut cliquer sur l'icon à chaque nouvelle phrase.
-Si tous se passe bien, un carré de couleur s'affiche en bas a gauche de l'écran.
-Vert: Reverso n'as pas detecté de problème avec la phrase. Ca ne veux pas dire qu'il n'y a pas de fautes.
-Rouge: Le texte change de couleur à l'endroit de la faute.
-
-<img width="2560" alt="image" src="https://github.com/MartinPELCAT/ProjetVoltaireCheat/assets/35460122/48335db2-d7c6-4ae4-873c-a69c2c071416">
-<img width="2089" alt="image" src="https://github.com/MartinPELCAT/ProjetVoltaireCheat/assets/35460122/5ad6a7b3-2f19-4b97-b0f7-bc467fa5072a">
-
-Normalement, si vous n'utiliez que l'extension vous avez plus de 50% de réussite !
+Apache 2.0 — Voir le fichier [LICENSE](LICENSE).

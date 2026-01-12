@@ -7,8 +7,7 @@
     "clean": "rm -rf dist && mkdir dist && mkdir dist/assets && cp manifest.json dist && cp -r src/assets/* dist/assets/",
     "prebuild": "npm run clean",
     "build:popup": "yarn --cwd src/popup/ run build",
-    "build:background": "tsc --project src/background/tsconfig.json",
-    "build": "yarn build:popup && yarn build:background && yarn zip",
+    "build": "yarn build:popup && yarn zip",
     "zip": "zip -r extension.zip dist"
   },
   "keywords": [
@@ -21,9 +20,9 @@
   "author": "Martin PELCAT",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@types/chrome": "0.0.115",
-    "@types/node": "14.0.13",
-    "typescript": "^5.3.3"
+    "@types/chrome": "^0.1.33",
+    "@types/node": "^25.0.6",
+    "typescript": "^5.9.3"
   },
   "dependencies": {}
 }

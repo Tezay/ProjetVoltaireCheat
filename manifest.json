@@ -1,19 +1,21 @@
 {
-  "manifest_version": 2,
-  "name": "Projet voltaire extention",
-  "version": "1.0.0",
-  "description": "Projet voltaire cheat",
-  "permissions": ["tabs", "activeTab", "storage", "declarativeContent"],
-  "page_action": {
+  "manifest_version": 3,
+  "name": "Projet Voltaire Cheat (2026)",
+  "version": "2.0.0",
+  "description": "Assistant pour Projet Voltaire",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.projet-voltaire.fr/*"
+  ],
+  "action": {
     "default_popup": "popup/index.html",
-    "default_title": "Projet voltaire"
+    "default_title": "Projet Voltaire Cheat"
   },
   "icons": {
     "128": "./assets/icon.png"
-  },
-  "background": {
-    "scripts": ["background/index.js"],
-    "persistent": false
-  },
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
+  }
 }

@@ -20,36 +20,38 @@ export function App() {
     });
   }, []);
 
-  const startScript = useCallback(() => {
-    chrome.tabs.executeScript(
-      {
-        code: `(${scriptVoltaire})()`,
-      },
-      async () => {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          const port = chrome.tabs.connect(tabs[0].id as number);
-          const initSession: MessageType = { type: "startSession" };
-          port.postMessage(initSession);
-          port.onMessage.addListener(async (response) => {
-            if (sentence !== response) {
-              setSentence((res) => res);
+  const startScript = useCallback(async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return;
 
-              const { data } = await fetchSentence(response);
-              const sentenceResponse: MessageType = {
-                type: "sentenceResponse",
-                value: data,
-              };
-              port.postMessage(sentenceResponse);
-            }
-          });
-        });
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: scriptVoltaire,
+    });
+
+    const port = chrome.tabs.connect(tab.id);
+    const initSession: MessageType = { type: "startSession" };
+    port.postMessage(initSession);
+    port.onMessage.addListener(async (response) => {
+      if (sentence !== response) {
+        setSentence((res) => res);
+
+        const { data } = await fetchSentence(response);
+        const sentenceResponse: MessageType = {
+          type: "sentenceResponse",
+          value: data,
+        };
+        port.postMessage(sentenceResponse);
       }
-    );
-  }, []);
+    });
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchSentence]);
 
   useEffect(() => {
-    chrome.runtime.connect();
+    // chrome.runtime.connect(); // Removed in V3 as background script is optional
     startScript();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
