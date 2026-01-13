@@ -12,6 +12,6 @@ export interface CorrectedSentence {
 
 export type MessageType =
   | {
-    type: "startSession" | "sentenceChange";
+    type: "startSession" | "sentenceChange" | "apiError";
   }
   | { type: "sentenceResponse"; value: CorrectedSentence };

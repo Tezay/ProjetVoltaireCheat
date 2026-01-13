@@ -115,27 +115,63 @@ export const scriptVoltaire = async function () {
 
 
   const getSentence = (): string => {
-    const sentenceArray: string[] = [];
-    document
-      .getElementsByClassName("sentence")[0]
-      ?.childNodes.forEach((node) => {
+    // Strategy 1: Classic Projet Voltaire interface (uses .sentence class)
+    const classicSentence = document.getElementsByClassName("sentence")[0];
+    if (classicSentence) {
+      const sentenceArray: string[] = [];
+      classicSentence.childNodes.forEach((node) => {
         sentenceArray.push(node.textContent || "");
       });
-    return sentenceArray.join("");
+      return sentenceArray.join("");
+    }
+
+    // Strategy 2: Académie Voltaire / React Native Web interface
+    const sentenceContainer = document.querySelector('.r-18u37iz.r-1w6e6rj.r-1h0z5md.r-1peese0');
+    if (sentenceContainer) {
+      const wordDivs = sentenceContainer.querySelectorAll('div[dir="auto"].css-146c3p1');
+      if (wordDivs.length > 0) {
+        const words: string[] = [];
+        wordDivs.forEach((div) => {
+          const text = div.textContent || "";
+          words.push(text);
+        });
+        return words.join("");
+      }
+    }
+
+    // Fallback: return empty (will trigger error message)
+    return "";
   };
 
   const listener = (port: chrome.runtime.Port) => {
     port.onMessage.addListener((message: MessageType) => {
       if (message.type === "startSession") {
-        port.postMessage(getSentence());
+        const sentence = getSentence();
+        if (!sentence) {
+          showError("Impossible de détecter la phrase. Interface non reconnue.");
+          return;
+        }
+        port.postMessage(sentence);
         chrome.runtime.onConnect.removeListener(listener);
       } else if (message.type === "sentenceResponse") {
         const value = message.value as CorrectedSentence;
         const originalSentence = getSentence();
         const isCorrect = value.corrections.length === 0;
         updateCard(isCorrect, value.text, originalSentence, value.corrections);
+      } else if (message.type === "apiError") {
+        showError("Erreur de connexion à Reverso. Réessayez.");
       }
     });
+  };
+
+  const showError = (message: string) => {
+    const card = document.getElementById("cardou")!;
+    const content = document.getElementById("cardou-content")!;
+    card.style.background = "linear-gradient(135deg, #6c757d 0%, #495057 100%)";
+    content.innerHTML = `
+      <div class="status-badge" style="background: rgba(255,255,255,0.2);">⚠ Erreur</div>
+      <div class="sentence-box">${message}</div>
+    `;
   };
 
   chrome.runtime.onConnect.addListener(listener);
