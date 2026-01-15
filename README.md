@@ -29,6 +29,18 @@ cd src/popup && yarn install && cd ../..
 yarn build
 ```
 
+## Limitations et Fiabilité
+
+L'extension utilise l'**API de Reverso**. Bien que ce soit la meilleure solution gratuite disponible, elle possède des limitations techniques inhérentes (environ **80% de fiabilité**).
+Il est impossible de corriger ces points côté extension car ils dépendent directement du moteur de Reverso.
+
+> ### Points de vigilance
+> - **Conjugaison** : Subjonctif présent (2ème personne du singulier) : Ajoute un *s* même sur les formes se terminant par un *e* muet (ex: *Saches* au lieu de *Sache*).
+> - **Confusions fréquentes** : *Plus tôt/Plutôt*, *Affaire/À faire*, *Leur/Leurs*.
+> - **Sémantique** : De façon générale sur les mots nécessitant une analyse sémantique globale du contexte.
+>
+> **Gardez un œil critique sur les suggestions !**
+
 ## Licence
 
 Apache 2.0 — Voir le fichier [LICENSE](LICENSE).
