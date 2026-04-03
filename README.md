@@ -2,7 +2,7 @@
 
 Fork du projet original de [MartinPELCAT](https://github.com/MartinPELCAT/ProjetVoltaireCheat), mis à jour et corrigé pour fonctionner avec les versions actuelles de Chrome.
 
-Version courante: `2.2.0`
+Version courante: `2.2.1`
 
 ## Installation
 
@@ -47,6 +47,19 @@ Le build produit :
 
 - `dist/` pour le chargement non empaqueté dans Chrome
 - `extension.zip` pour une release
+
+## Hook pre-commit
+
+Un hook versionné est fourni dans `.githooks/pre-commit`. Il lance les vérifications non mutantes nécessaires avant un commit :
+
+- `yarn --cwd src/popup lint`
+- `yarn --cwd src/popup typecheck`
+
+Activez-le une fois par clone avec :
+
+```bash
+yarn hooks:install
+```
 
 ## Limitations et Fiabilité
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Projet Voltaire Cheat (2026)",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Assistant pour Projet Voltaire",
   "permissions": ["storage"],
   "host_permissions": [

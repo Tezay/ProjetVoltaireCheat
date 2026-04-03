@@ -157,7 +157,14 @@ export function App() {
     <div className="w-80 bg-slate-100 p-3 text-slate-900">
       <div className="mb-3">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-          Projet Voltaire Cheat 2.2.0
+          Projet Voltaire Cheat 2.2.1
+        </p>
+        <h1 className="mt-1 text-lg font-bold">Détection rapide</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          Lance une analyse manuelle ou configure le raccourci global pour les
+          pages Projet Voltaire.
+        </p>
+      </div>
 
       {error && (
         <div className="mb-2 rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white">
@@ -208,7 +215,7 @@ export function App() {
 
         <p className="mt-3 text-xs text-slate-600">
           Clique sur le bouton ci-dessous puis appuie sur la combinaison à
-          enregistrer.
+          enregistrer. Le reset remet uniquement la touche par défaut.
         </p>
 
         <Button

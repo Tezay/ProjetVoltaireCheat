@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "validate": "yarn lint && yarn typecheck",
     "build": "tsc && vite build",
     "build:content": "vite build --config vite.content.config.ts",
     "build:worker": "vite build --config vite.worker.config.ts",
