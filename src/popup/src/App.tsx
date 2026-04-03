@@ -1,91 +1,244 @@
-import { useCallback, useEffect, useState } from "react";
-import axios, { AxiosError } from "axios";
-import { scriptVoltaire } from "./script-voltaire/script.voltaire";
-import { MessageType } from "./types/ChromeRuntime";
+import { useEffect, useState } from "react";
 import Button from "./components/Button";
+import {
+  formatShortcut,
+  shortcutFromKeyboardEvent,
+} from "./extension/shortcut";
+import {
+  getStoredShortcutConfig,
+  setStoredShortcutConfig,
+} from "./extension/storage";
+import {
+  DEFAULT_SHORTCUT_CONFIG,
+  type ShortcutConfig,
+  type TriggerDetectionResponse,
+} from "./extension/types";
 
 export function App() {
-  const [sentence, setSentence] = useState("");
+  const [shortcutConfig, setShortcutConfig] = useState<ShortcutConfig>(
+    DEFAULT_SHORTCUT_CONFIG
+  );
   const [error, setError] = useState<string | null>(null);
-
-  const fetchSentence = useCallback(async (text: string) => {
-    try {
-      const response = await axios.post("https://orthographe.reverso.net/api/v1/Spelling", {
-        language: "fra",
-        text: text,
-        autoReplace: true,
-        interfaceLanguage: "fr",
-        locale: "Indifferent",
-        origin: "interactive",
-        generateSynonyms: false,
-        getCorrectionDetails: true,
-      }, {
-        timeout: 10000, // 10 second timeout
-      });
-      setError(null);
-      return response;
-    } catch (err) {
-      const axiosError = err as AxiosError;
-      if (axiosError.response?.status === 429) {
-        setError("Rate limité par Reverso. Réessayez dans quelques secondes.");
-      } else if (axiosError.code === 'ECONNABORTED') {
-        setError("Timeout - Reverso ne répond pas.");
-      } else {
-        setError("Erreur de connexion à Reverso.");
-      }
-      throw err;
-    }
-  }, []);
-
-  const startScript = useCallback(async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) return;
-
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: scriptVoltaire,
-    });
-
-    const port = chrome.tabs.connect(tab.id);
-    const initSession: MessageType = { type: "startSession" };
-    port.postMessage(initSession);
-    port.onMessage.addListener(async (response) => {
-      if (sentence !== response) {
-        setSentence(() => response);
-
-        try {
-          const { data } = await fetchSentence(response);
-          const sentenceResponse: MessageType = {
-            type: "sentenceResponse",
-            value: data,
-          };
-          port.postMessage(sentenceResponse);
-        } catch {
-          // Error already handled in fetchSentence, send error message to content script
-          const errorMessage: MessageType = {
-            type: "apiError",
-          };
-          port.postMessage(errorMessage);
-        }
-      }
-    });
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchSentence]);
+  const [info, setInfo] = useState<string | null>(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+  const [isSavingShortcut, setIsSavingShortcut] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [isCapturingShortcut, setIsCapturingShortcut] = useState(false);
 
   useEffect(() => {
-    startScript();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    async function loadShortcutConfig() {
+      try {
+        const storedConfig = await getStoredShortcutConfig();
+        setShortcutConfig(storedConfig);
+      } catch {
+        setError("Impossible de charger le raccourci clavier.");
+      } finally {
+        setIsLoadingConfig(false);
+      }
+    }
+
+    void loadShortcutConfig();
   }, []);
 
+  useEffect(() => {
+    if (!isCapturingShortcut) {
+      return;
+    }
+
+    function handleKeydown(event: KeyboardEvent) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const capturedShortcut = shortcutFromKeyboardEvent(
+        event,
+        shortcutConfig.enabled
+      );
+
+      if (!capturedShortcut) {
+        setError("La combinaison doit inclure une touche principale.");
+        return;
+      }
+
+      setIsCapturingShortcut(false);
+      void saveShortcutConfig(capturedShortcut, "Raccourci clavier mis à jour.");
+    }
+
+    window.addEventListener("keydown", handleKeydown, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeydown, true);
+    };
+  }, [isCapturingShortcut, shortcutConfig.enabled]);
+
+  async function saveShortcutConfig(
+    nextConfig: Partial<ShortcutConfig>,
+    successMessage: string
+  ) {
+    setIsSavingShortcut(true);
+
+    try {
+      const updatedConfig = await setStoredShortcutConfig(nextConfig);
+      setShortcutConfig(updatedConfig);
+      setError(null);
+      setInfo(successMessage);
+    } catch {
+      setInfo(null);
+      setError("Impossible d'enregistrer le raccourci clavier.");
+    } finally {
+      setIsSavingShortcut(false);
+    }
+  }
+
+  async function handleManualDetection() {
+    setIsDetecting(true);
+    setError(null);
+    setInfo(null);
+
+    try {
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+
+      if (!tab?.id) {
+        throw new Error("missing_tab");
+      }
+
+      const response = (await chrome.tabs.sendMessage(tab.id, {
+        type: "triggerDetection",
+        source: "popup",
+      })) as TriggerDetectionResponse;
+
+      if (response.status === "error") {
+        setError(response.message);
+        return;
+      }
+
+      setInfo("Analyse lancée sur l'onglet actif.");
+    } catch {
+      setError(
+        "Ouvrez ou rechargez une page d'exercice Projet Voltaire, puis réessayez."
+      );
+    } finally {
+      setIsDetecting(false);
+    }
+  }
+
+  async function handleToggleShortcut() {
+    setIsCapturingShortcut(false);
+    setInfo(null);
+    await saveShortcutConfig(
+      { enabled: !shortcutConfig.enabled },
+      shortcutConfig.enabled
+        ? "Raccourci clavier désactivé."
+        : "Raccourci clavier activé."
+    );
+  }
+
+  async function handleResetShortcut() {
+    setIsCapturingShortcut(false);
+    setInfo(null);
+    await saveShortcutConfig(
+      {
+        key: DEFAULT_SHORTCUT_CONFIG.key,
+        ctrlKey: DEFAULT_SHORTCUT_CONFIG.ctrlKey,
+        altKey: DEFAULT_SHORTCUT_CONFIG.altKey,
+        shiftKey: DEFAULT_SHORTCUT_CONFIG.shiftKey,
+        metaKey: DEFAULT_SHORTCUT_CONFIG.metaKey,
+      },
+      "Raccourci réinitialisé sur V."
+    );
+  }
+
+  const formattedShortcut = formatShortcut(shortcutConfig);
+  const isBusy = isLoadingConfig || isSavingShortcut;
+
   return (
-    <div className="bg-gray-400 text-center lg:px-4 w-64 p-2">
+    <div className="w-80 bg-slate-100 p-3 text-slate-900">
+      <div className="mb-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Projet Voltaire Cheat 2.2.0
+
       {error && (
-        <div className="bg-red-500 text-white text-xs p-2 mb-2 rounded">
+        <div className="mb-2 rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white">
           {error}
         </div>
       )}
-      <Button onClick={startScript}>Lancer une session !!</Button>
+
+      {info && (
+        <div className="mb-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white">
+          {info}
+        </div>
+      )}
+
+      <Button disabled={isBusy || isDetecting} onClick={handleManualDetection}>
+        {isDetecting ? "Détection en cours..." : "Détecter cette phrase"}
+      </Button>
+
+      <Button
+        disabled={isBusy}
+        onClick={handleToggleShortcut}
+        variant="secondary"
+      >
+        {shortcutConfig.enabled
+          ? `Désactiver le raccourci clavier (${formattedShortcut})`
+          : `Activer le raccourci clavier (${formattedShortcut})`}
+      </Button>
+
+      <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Raccourci actuel
+            </p>
+            <p className="mt-1 text-base font-semibold text-slate-900">
+              {formattedShortcut}
+            </p>
+          </div>
+          <span
+            className={`rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${
+              shortcutConfig.enabled
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-slate-200 text-slate-600"
+            }`}
+          >
+            {shortcutConfig.enabled ? "Actif" : "Inactif"}
+          </span>
+        </div>
+
+        <p className="mt-3 text-xs text-slate-600">
+          Clique sur le bouton ci-dessous puis appuie sur la combinaison à
+          enregistrer.
+        </p>
+
+        <Button
+          disabled={isBusy}
+          onClick={() => {
+            setError(null);
+            setInfo(null);
+            setIsCapturingShortcut((currentValue) => !currentValue);
+          }}
+          variant="subtle"
+        >
+          {isCapturingShortcut
+            ? "En attente d'une combinaison..."
+            : "Modifier le raccourci"}
+        </Button>
+
+        {isCapturingShortcut && (
+          <div className="rounded-lg border border-dashed border-sky-300 bg-sky-50 px-3 py-2 text-xs text-sky-800">
+            Appuie maintenant sur la combinaison à enregistrer dans la popup.
+          </div>
+        )}
+
+        <Button
+          disabled={isBusy}
+          onClick={handleResetShortcut}
+          variant="secondary"
+        >
+          Réinitialiser sur V
+        </Button>
+      </div>
     </div>
   );
 }

@@ -1,15 +1,22 @@
 {
   "manifest_version": 3,
   "name": "Projet Voltaire Cheat (2026)",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Assistant pour Projet Voltaire",
-  "permissions": [
-    "activeTab",
-    "scripting",
-    "storage"
-  ],
+  "permissions": ["storage"],
   "host_permissions": [
-    "*://*.projet-voltaire.fr/*"
+    "*://*.projet-voltaire.fr/*",
+    "https://orthographe.reverso.net/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.projet-voltaire.fr/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
   ],
   "action": {
     "default_popup": "popup/index.html",

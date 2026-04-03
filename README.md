@@ -2,6 +2,8 @@
 
 Fork du projet original de [MartinPELCAT](https://github.com/MartinPELCAT/ProjetVoltaireCheat), mis à jour et corrigé pour fonctionner avec les versions actuelles de Chrome.
 
+Version courante: `2.2.0`
+
 ## Installation
 
 1. Téléchargez le fichier `extension.zip` depuis les Releases (ou clonez le repo et lancez `yarn build`).
@@ -15,9 +17,21 @@ Fork du projet original de [MartinPELCAT](https://github.com/MartinPELCAT/Projet
 
 1. Allez sur le site Projet Voltaire et commencez un exercice.
 2. Cliquez sur l'icône de l'extension.
-3. Une carte de feedback apparaît en bas à gauche :
+3. Dans la popup :
+   - Cliquez sur **Détecter cette phrase** pour lancer une analyse manuelle.
+   - Activez **Activer le raccourci clavier** pour pouvoir analyser la phrase sans rouvrir la popup ("**V**" par défaut).
+   - Vous pouvez modifier la combinaison directement dans la popup.
+4. Une carte de feedback apparaît en bas à gauche :
    - **Vert** : La phrase est correcte (selon Reverso).
    - **Rouge** : Une erreur est détectée, avec la correction proposée.
+   - **Gris** : Une erreur technique est survenue.
+
+## Raccourci clavier
+
+- Le raccourci est **désactivé par défaut**.
+- Une fois activé, il reste actif sur les pages `*.projet-voltaire.fr`.
+- Il peut être configuré avec une touche seule ou une combinaison (`Ctrl`, `Alt`, `Shift`, `Cmd` + touche).
+- Le raccourci est ignoré pendant la saisie dans les champs éditables.
 
 ## Build
 
@@ -28,6 +42,11 @@ yarn install
 cd src/popup && yarn install && cd ../..
 yarn build
 ```
+
+Le build produit :
+
+- `dist/` pour le chargement non empaqueté dans Chrome
+- `extension.zip` pour une release
 
 ## Limitations et Fiabilité
 

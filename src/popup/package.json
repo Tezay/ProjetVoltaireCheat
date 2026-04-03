@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:content": "vite build --config vite.content.config.ts",
+    "build:worker": "vite build --config vite.worker.config.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },

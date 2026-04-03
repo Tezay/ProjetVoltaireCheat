@@ -1,13 +1,15 @@
 {
   "name": "project-voltaire-cheat",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Projet voltaire extension cheat",
   "private": true,
   "scripts": {
-    "clean": "rm -rf dist && mkdir dist && mkdir dist/assets && cp manifest.json dist && cp -r src/assets/* dist/assets/",
+    "clean": "rm -rf dist extension.zip && mkdir -p dist/assets && cp manifest.json dist && cp -r src/assets/* dist/assets/",
     "prebuild": "npm run clean",
-    "build:popup": "yarn --cwd src/popup/ run build",
-    "build": "yarn build:popup && yarn zip",
+    "build:popup": "yarn --cwd src/popup run build",
+    "build:content": "yarn --cwd src/popup run build:content",
+    "build:worker": "yarn --cwd src/popup run build:worker",
+    "build": "yarn build:popup && yarn build:content && yarn build:worker && yarn zip",
     "zip": "zip -r extension.zip dist"
   },
   "keywords": [
