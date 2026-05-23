@@ -1,6 +1,6 @@
 {
   "name": "project-voltaire-cheat",
-  "version": "2.2.1",
+  "version": "3.0.0",
   "description": "Projet voltaire extension cheat",
   "private": true,
   "scripts": {
@@ -8,10 +8,11 @@
     "prebuild": "npm run clean",
     "build:popup": "yarn --cwd src/popup run build",
     "build:content": "yarn --cwd src/popup run build:content",
+    "build:extractor": "yarn --cwd src/popup run build:extractor",
     "build:worker": "yarn --cwd src/popup run build:worker",
     "validate": "yarn --cwd src/popup run validate",
     "hooks:install": "git config core.hooksPath .githooks",
-    "build": "yarn build:popup && yarn build:content && yarn build:worker && yarn zip",
+    "build": "yarn build:popup && yarn build:content && yarn build:extractor && yarn build:worker && yarn zip",
     "zip": "zip -r extension.zip dist"
   },
   "keywords": [

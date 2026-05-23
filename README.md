@@ -1,78 +1,159 @@
-# Projet Voltaire Cheat (2026)
+# Projet Voltaire Cheat
 
-Fork du projet original de [MartinPELCAT](https://github.com/MartinPELCAT/ProjetVoltaireCheat), mis à jour et corrigé pour fonctionner avec les versions actuelles de Chrome.
+Extension Chrome qui résout automatiquement les exercices **Projet Voltaire** et **Académie Voltaire** à votre place.
 
-Version courante: `2.2.1`
+Version actuelle : **3.0.0**
+
+---
+
+## Fonctionnement
+
+L'extension lit chaque exercice et clique sur la bonne réponse pour vous. Elle fonctionne de deux façons selon la situation :
+
+- **Lecture directe** : Elle lit la réponse directement dans le code de la page Projet Voltaire. C'est la méthode la plus fiable : la réponse est certaine.
+- **Suggestion Reverso** : Quand la lecture directe n'est pas possible, elle envoie la phrase à l'API Reverso (correcteur d'orthographe) pour obtenir une suggestion. C'est une bonne approximation, mais pas infaillible.
+
+Elle gère tous les types d'exercices :
+
+| Type d'exercice | Méthode utilisée |
+|---|---|
+| Phrase avec ou sans faute | Lecture directe, puis Reverso si nécessaire |
+| Mot à trouver | Lecture directe uniquement |
+| Classement (glisser-déposer) | Lecture directe uniquement |
+| Écrans de transition (Suivant, Continuer…) | Passage automatique |
+| Popups audio (Désactiver, Je ne peux pas écouter…) | Contournement automatique |
+
+Si aucune méthode ne fonctionne sur une question, l'extension s'arrête plutôt que de répondre au hasard.
+
+---
 
 ## Installation
 
-1. Téléchargez le fichier `extension.zip` depuis les Releases (ou clonez le repo et lancez `yarn build`).
-2. Dézippez le contenu.
-3. Ouvrez Chrome et allez sur `chrome://extensions/`.
-4. Activez le **Mode développeur** (en haut à droite).
-5. Cliquez sur **Charger l'extension non empaquetée** et sélectionnez le dossier `dist`.
-6. Epinglez l'extension.
+L'extension n'est pas disponible sur le Chrome Web Store. Elle s'installe manuellement en quelques étapes.
+
+1. **Télécharger** : Récupérez `extension.zip` depuis la page [Releases](../../releases) de ce dépôt et extrayez-le. Vous obtiendrez un dossier `dist`.
+2. **Ouvrir les extensions Chrome** : Dans Chrome, allez sur `chrome://extensions/` et activez le **Mode développeur** (en haut à droite).
+3. **Charger l'extension** : Cliquez sur **Charger l'extension non empaquetée** et sélectionnez le dossier `dist`.
+4. **Épingler l'icône** *(recommandé)* : Cliquez sur l'icône puzzle en haut à droite de Chrome et épinglez **Projet Voltaire Cheat**.
+
+---
+
+## Mise à jour
+
+Quand une nouvelle version est disponible :
+
+1. Téléchargez le nouveau `extension.zip`.
+2. Remplacez l'ancien dossier `dist` par le nouveau (extrait depuis le ZIP).
+3. Allez sur `chrome://extensions/` et cliquez sur **Recharger** (l'icône ↺ sous l'extension).
+4. Rechargez l'onglet Projet Voltaire si il était déjà ouvert.
+
+---
 
 ## Utilisation
 
-1. Allez sur le site Projet Voltaire et commencez un exercice.
-2. Cliquez sur l'icône de l'extension.
-3. Dans la popup :
-   - Cliquez sur **Détecter cette phrase** pour lancer une analyse manuelle.
-   - Activez **Activer le raccourci clavier** pour pouvoir analyser la phrase sans rouvrir la popup ("**V**" par défaut).
-   - Vous pouvez modifier la combinaison directement dans la popup.
-4. Une carte de feedback apparaît en bas à gauche :
-   - **Vert** : La phrase est correcte (selon Reverso).
-   - **Rouge** : Une erreur est détectée, avec la correction proposée.
-   - **Gris** : Une erreur technique est survenue.
+1. Ouvrez un exercice sur [Projet Voltaire](https://www.projet-voltaire.fr) ou Académie Voltaire.
+2. Cliquez sur l'icône de l'extension dans la barre Chrome.
+3. Choisissez votre mode.
 
-## Raccourci clavier
+### Mode automatique
 
-- Le raccourci est **désactivé par défaut**.
-- Une fois activé, il reste actif sur les pages `*.projet-voltaire.fr`.
-- Il peut être configuré avec une touche seule ou une combinaison (`Ctrl`, `Alt`, `Shift`, `Cmd` + touche).
-- Le raccourci est ignoré pendant la saisie dans les champs éditables.
+Activez le **Mode automatique** dans la popup. L'extension résout alors les questions en continu, passe les écrans de transition, et enchaîne jusqu'à la fin de la session. Vous n'avez rien d'autre à faire.
 
-## Build
+### Résoudre une question à la demande
 
-Nécessite Node.js et Yarn.
+Cliquez sur le bouton **Corriger cette question** pour résoudre uniquement la question affichée à ce moment. Utile si vous voulez garder la main et n'utiliser l'extension que ponctuellement.
+
+### Raccourci clavier
+
+Un raccourci clavier permet de déclencher la correction d'une question sans ouvrir la popup. Par défaut la touche est **V** (désactivé par défaut, à activer dans les réglages avancés). Il peut être modifié ou réinitialisé depuis la popup.
+
+---
+
+## Ce qu'affiche la popup
+
+La popup vous indique en temps réel ce que fait l'extension :
+
+- **La source utilisée** : *Lecture directe* (réponse certaine) ou *Reverso* (suggestion approximative). Un indicateur coloré vous montre laquelle est active : vert pour la lecture directe, bleu pour Reverso.
+- **La phrase en cours** : Le texte de l'exercice que l'extension est en train de lire.
+- **La dernière action** : Ce que l'extension vient de faire.
+- **Le raccourci** : Son état et sa touche.
+- **Les statistiques de session** : Nombre de réponses directes, Reverso, transitions automatiques, pauses et erreurs de test.
+
+---
+
+## Réglages avancés
+
+Cliquez sur **Réglages avancés** dans la popup pour accéder aux options suivantes.
+
+### Utiliser seulement Reverso
+
+Désactive la lecture directe et force l'utilisation de Reverso pour toutes les phrases. Utile uniquement pour tester ou diagnostiquer un problème. **Non recommandé en utilisation normale.**
+
+### Délai automatique
+
+En mode automatique, l'extension attend entre chaque action pour paraître naturelle. Vous pouvez ajuster le délai minimum et maximum (en secondes). Par défaut : entre 1 et 2 secondes.
+
+### Taux d'erreur directe
+
+Permet de simuler volontairement des erreurs sur les réponses directes, pour rendre la session moins suspecte. S'applique uniquement en mode automatique, sur les réponses certaines (pas sur Reverso). Réglé à 0 % par défaut (aucune erreur simulée).
+
+### Raccourci clavier
+
+Depuis ce panneau vous pouvez :
+- **Activer ou désactiver** le raccourci.
+- **Modifier** la touche (cliquez sur Modifier puis appuyez sur la combinaison souhaitée).
+- **Réinitialiser** sur la touche V par défaut.
+
+---
+
+## Limitations
+
+- **Lecture directe dépendante de Projet Voltaire** : Si Projet Voltaire modifie en profondeur son application, la lecture directe peut cesser de fonctionner. L'extension bascule alors sur Reverso, ou se met en pause.
+- **Reverso n'est pas parfait** : L'API Reverso peut se tromper, notamment sur les phrases avec des noms propres, du vocabulaire rare, ou des tournures complexes. C'est pourquoi l'extension ne l'utilise que comme solution de repli.
+- **Fonctionne uniquement sur Chrome** : L'extension est au format Manifest V3 Chrome. Elle n'est pas compatible Firefox ou Safari sans adaptation.
+
+---
+
+## Pour les développeurs
+
+### Prérequis
+
+- Node.js
+- Yarn
+
+### Installation des dépendances
 
 ```bash
 yarn install
 cd src/popup && yarn install && cd ../..
+```
+
+### Validation (lint + typecheck + tests)
+
+```bash
+yarn validate
+```
+
+### Build
+
+```bash
 yarn build
 ```
 
-Le build produit :
+Produit `dist/` et `extension.zip`.
 
-- `dist/` pour le chargement non empaqueté dans Chrome
-- `extension.zip` pour une release
-
-## Hook pre-commit
-
-Un hook versionné est fourni dans `.githooks/pre-commit`. Il lance les vérifications non mutantes nécessaires avant un commit :
-
-- `yarn --cwd src/popup lint`
-- `yarn --cwd src/popup typecheck`
-
-Activez-le une fois par clone avec :
+### Hook pre-commit
 
 ```bash
 yarn hooks:install
 ```
 
-## Limitations et Fiabilité
+Lance `yarn validate` automatiquement avant chaque commit.
 
-L'extension utilise l'**API de Reverso**. Bien que ce soit la meilleure solution gratuite disponible, elle possède des limitations techniques inhérentes (environ **80% de fiabilité**).
-Il est impossible de corriger ces points côté extension car ils dépendent directement du moteur de Reverso.
-
-> ### Points de vigilance
-> - **Conjugaison** : Subjonctif présent (2ème personne du singulier) : Ajoute un *s* même sur les formes se terminant par un *e* muet (ex: *Saches* au lieu de *Sache*).
-> - **Confusions fréquentes** : *Plus tôt/Plutôt*, *Affaire/À faire*, *Leur/Leurs*.
-> - **Sémantique** : De façon générale sur les mots nécessitant une analyse sémantique globale du contexte.
->
-> **Gardez un œil critique sur les suggestions !**
+---
 
 ## Licence
 
-Apache 2.0 — Voir le fichier [LICENSE](LICENSE).
+Apache 2.0 - voir le fichier [LICENSE](LICENSE).
+
+Basé sur le projet original de [MartinPELCAT](https://github.com/MartinPELCAT/ProjetVoltaireCheat).

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Projet Voltaire Cheat (2026)",
-  "version": "2.2.1",
+  "version": "3.0.0",
   "description": "Assistant pour Projet Voltaire",
   "permissions": ["storage"],
   "host_permissions": [
@@ -15,6 +15,12 @@
     {
       "matches": ["*://*.projet-voltaire.fr/*"],
       "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.projet-voltaire.fr/*"],
+      "js": ["extractor.js"],
+      "world": "MAIN",
       "run_at": "document_idle"
     }
   ],

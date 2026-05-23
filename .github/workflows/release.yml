@@ -26,6 +26,9 @@ jobs:
         run: yarn install --frozen-lockfile
         working-directory: src/popup
 
+      - name: Validate extension
+        run: yarn validate
+
       - name: Build extension
         run: yarn build
 

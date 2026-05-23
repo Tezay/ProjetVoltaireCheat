@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "validate": "yarn lint && yarn typecheck",
+    "test:solver": "tsc -p tsconfig.test.json && cp tests/package.commonjs.json .test-dist/package.json && node --test .test-dist/tests/*.test.js",
+    "validate": "yarn lint && yarn typecheck && yarn test:solver",
     "build": "tsc && vite build",
     "build:content": "vite build --config vite.content.config.ts",
+    "build:extractor": "vite build --config vite.extractor.config.ts",
     "build:worker": "vite build --config vite.worker.config.ts",
     "lint": "eslint .",
     "preview": "vite preview"

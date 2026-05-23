@@ -1,11 +1,11 @@
-import { ensureStoredShortcutConfig } from "./storage";
-import {
-  type AnalysisErrorMessage,
-  type AnalysisErrorCode,
-  type AnalysisResultMessage,
-  type AnalyzeSentenceMessage,
-  type BackgroundRequestMessage,
-  type CorrectedSentence,
+import { ensureStoredSolverSettings } from "./storage";
+import type {
+  AnalysisErrorCode,
+  AnalysisErrorMessage,
+  AnalysisFallbackMessage,
+  AnalysisResultMessage,
+  BackgroundRequestMessage,
+  CorrectedSentence,
 } from "./types";
 
 const REVERSO_API_URL = "https://orthographe.reverso.net/api/v1/Spelling";
@@ -22,7 +22,7 @@ function buildAnalysisError(
   };
 }
 
-async function fetchSentenceAnalysis(
+async function fetchFallbackAnalysis(
   sentence: string
 ): Promise<AnalysisResultMessage | AnalysisErrorMessage> {
   const controller = new AbortController();
@@ -52,56 +52,56 @@ async function fetchSentenceAnalysis(
     if (response.status === 429) {
       return buildAnalysisError(
         "rate_limited",
-        "Rate limité par Reverso. Réessayez dans quelques secondes."
+        "Rate limite par Reverso. Reessayez dans quelques secondes."
       );
     }
 
     if (!response.ok) {
       return buildAnalysisError(
         "network_error",
-        "Erreur de connexion à Reverso."
+        "Erreur de connexion a Reverso."
       );
     }
 
-    const data = (await response.json()) as CorrectedSentence;
+    const payload = (await response.json()) as CorrectedSentence;
 
     return {
       type: "analysisResult",
-      value: data,
+      value: payload,
     };
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
-      return buildAnalysisError("timeout", "Timeout - Reverso ne répond pas.");
+      return buildAnalysisError("timeout", "Timeout - Reverso ne repond pas.");
     }
 
-    return buildAnalysisError("network_error", "Erreur de connexion à Reverso.");
+    return buildAnalysisError("network_error", "Erreur de connexion a Reverso.");
   } finally {
     globalThis.clearTimeout(timeoutId);
   }
 }
 
-async function handleAnalyzeSentence(
-  message: AnalyzeSentenceMessage
+async function handleAnalysisFallback(
+  message: AnalysisFallbackMessage
 ): Promise<AnalysisResultMessage | AnalysisErrorMessage> {
-  return fetchSentenceAnalysis(message.sentence);
+  return fetchFallbackAnalysis(message.sentence);
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  void ensureStoredShortcutConfig();
+  void ensureStoredSolverSettings();
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  void ensureStoredShortcutConfig();
+  void ensureStoredSolverSettings();
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   const runtimeMessage = message as BackgroundRequestMessage;
 
-  if (runtimeMessage.type !== "analyzeSentence") {
+  if (runtimeMessage.type !== "analysisFallback") {
     return false;
   }
 
-  void handleAnalyzeSentence(runtimeMessage).then(sendResponse);
+  void handleAnalysisFallback(runtimeMessage).then(sendResponse);
 
   return true;
 });

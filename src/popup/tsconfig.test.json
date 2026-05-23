@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "allowImportingTsExtensions": false,
+    "noEmit": false,
+    "outDir": "./.test-dist",
+    "rootDir": "./",
+    "types": ["node"],
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "src/extension/matching.ts",
+    "src/extension/normalization.ts",
+    "src/extension/settings-model.ts",
+    "src/extension/shortcut.ts",
+    "src/extension/types.ts",
+    "tests/**/*.ts"
+  ]
+}

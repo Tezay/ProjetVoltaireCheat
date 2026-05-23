@@ -21,9 +21,9 @@ export default function Button({
   ...props
 }: ButtonProps) {
   return (
-    <div className="block w-full my-1">
+    <div className="block w-full">
       <button
-        className={`w-full rounded-lg border px-4 py-2 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${VARIANT_CLASS_NAMES[variant]} ${className ?? ""}`}
+        className={`w-full rounded-2xl border px-4 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${VARIANT_CLASS_NAMES[variant]} ${className ?? ""}`}
         {...props}
       />
     </div>
