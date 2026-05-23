@@ -233,28 +233,50 @@ function findClickableAncestor(element: HTMLElement): HTMLElement | null {
 
 function isNoMistakeCandidate(element: HTMLElement): boolean {
   const text = getElementText(element);
-  // The length guard is critical: without it, the root container div (which wraps
-  // both the sentence words and the button) matches too, because its textContent
-  // includes the button text. The real button wrapper has only the button text (~22 chars).
   return text.length > 0 && text.length < 80 && isNoMistakeText(text);
+}
+
+function findNoMistakePressable(button: HTMLElement): HTMLElement {
+  const buttonText = getElementText(button);
+  const pressable = button.closest("div[tabindex='0']") as HTMLElement | null;
+
+  if (
+    pressable &&
+    isVisible(pressable) &&
+    getElementText(pressable) === buttonText
+  ) {
+    return pressable;
+  }
+
+  return button;
 }
 
 function findNoMistakeButton(
   wordCandidates: HTMLElement[]
 ): HTMLElement | null {
-  // Prefer the div[tabindex='0'] wrapper: same element type as word clicks, where
-  // Projet Voltaire registers its React handler (React Native Web Pressable pattern).
-  // The length guard ensures we skip the root exercise container, which also matches
-  // because its textContent includes both the sentence and the button text.
-  const divCandidate = wordCandidates.find(isNoMistakeCandidate);
-  if (divCandidate) {
-    return divCandidate;
-  }
-
-  // Fall back to explicit button elements (different page layouts).
+  // Prefer the real RNW button, then use its compact Pressable wrapper when it
+  // contains only the button label. This avoids selecting a larger tabindex
+  // question container whose textContent also includes the no-mistake label.
   const buttonCandidate = getVisibleButtons().find(isNoMistakeCandidate);
   if (buttonCandidate) {
-    return buttonCandidate;
+    return findNoMistakePressable(buttonCandidate);
+  }
+
+  const divCandidate = wordCandidates.find((element) => {
+    if (!isNoMistakeCandidate(element)) {
+      return false;
+    }
+
+    const nestedButton = Array.from(
+      element.querySelectorAll<HTMLElement>(
+        "button, [data-testid='button'], div[role='button']"
+      )
+    ).find(isNoMistakeCandidate);
+
+    return !nestedButton || getElementText(element) === getElementText(nestedButton);
+  });
+  if (divCandidate) {
+    return divCandidate;
   }
 
   // Broad search: find any matching element and walk up to its clickable ancestor.
