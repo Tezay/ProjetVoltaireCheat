@@ -8,6 +8,7 @@ import type {
 } from "./types";
 
 interface FiberNodeLike {
+  type?: unknown;
   memoizedState?: unknown;
   memoizedProps?: unknown;
   pendingProps?: unknown;
@@ -277,6 +278,16 @@ function sanitizeColumns(value: unknown): ExerciseColumnSnapshot[] {
     .filter((column): column is ExerciseColumnSnapshot => column !== null);
 }
 
+function sanitizeCorrectionSentences(value: unknown): ExerciseSentencePart[][] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((correction) => sanitizeSentenceParts(correction))
+    .filter((correction) => correction.length > 0);
+}
+
 function inferExerciseKind(rawExercise: Record<string, unknown>): ExerciseKind {
   const rawType = typeof rawExercise.type === "string" ? rawExercise.type : "";
 
@@ -302,6 +313,7 @@ function sanitizeExercise(rawExercise: unknown, index: number): ExerciseSnapshot
 
   const record = rawExercise as Record<string, unknown>;
   const sentence = sanitizeSentenceParts(record.sentence);
+  const corrections = sanitizeCorrectionSentences(record.corrections);
   const columns = sanitizeColumns(record.columns);
   const kind = inferExerciseKind(record);
 
@@ -319,6 +331,7 @@ function sanitizeExercise(rawExercise: unknown, index: number): ExerciseSnapshot
     id: rawId,
     kind,
     sentence,
+    corrections: corrections.length > 0 ? corrections : undefined,
     hasMistake:
       typeof record.hasMistake === "boolean" ? record.hasMistake : undefined,
     columns,
@@ -328,7 +341,7 @@ function sanitizeExercise(rawExercise: unknown, index: number): ExerciseSnapshot
   };
 }
 
-function extractExercises(): ExerciseSnapshot[] {
+function extractExerciseSnapshot(): ExerciseSnapshot[] {
   const fiberNode = findReactFiberNode();
 
   if (!fiberNode) {
@@ -381,7 +394,7 @@ function extractExercises(): ExerciseSnapshot[] {
 }
 
 function storeExercises(): void {
-  const exercises = extractExercises();
+  const exercises = extractExerciseSnapshot();
 
   writeExactSnapshotPayload({
     exercises,

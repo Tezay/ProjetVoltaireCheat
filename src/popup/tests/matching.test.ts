@@ -3,9 +3,11 @@ import test from "node:test";
 import {
   buildDragAndDropAssignments,
   canUseReversoFallback,
+  deriveExactDictationDecision,
   deriveExactClickDecision,
   deriveReversoFallbackDecision,
   matchClickExercise,
+  matchDictationExercise,
   matchDragAndDropExercise,
 } from "../src/extension/matching";
 import type { ExerciseSnapshot } from "../src/extension/types";
@@ -80,6 +82,94 @@ test("matchDragAndDropExercise matches the displayed cards against exact columns
   assert.equal(matched?.id, "drag-1");
 });
 
+test("matchDictationExercise matches a visible sentence with the missing part removed", () => {
+  const matched = matchDictationExercise(
+    [
+      {
+        id: "dictation-mistake",
+        kind: "click_on_mistake",
+        sentence: [
+          { text: "Ma voiture est en panne : il ne manquait plus que" },
+          { text: "sa", mistake: true, clue: true },
+          { text: "!" },
+        ],
+        corrections: [
+          [
+            { text: "Ma voiture est en panne : il ne manquait plus que" },
+            { text: "ça" },
+            { text: "!" },
+          ],
+        ],
+        hasMistake: true,
+        columns: [],
+        metadata: {},
+      },
+    ],
+    ["Il", "ne", "manquait", "plus", "que", "!"],
+    1
+  );
+
+  assert.equal(matched?.id, "dictation-mistake");
+});
+
+test("matchDictationExercise matches when the missing part is at the beginning", () => {
+  const matched = matchDictationExercise(
+    [
+      {
+        id: "dictation-leading-mistake",
+        kind: "click_on_mistake",
+        sentence: [
+          { text: "Connaissait-tu", mistake: true, clue: true },
+          { text: "l'ancienne directrice commerciale ?" },
+        ],
+        corrections: [
+          [
+            { text: "Connaissais-tu" },
+            { text: "l'ancienne directrice commerciale ?" },
+          ],
+        ],
+        hasMistake: true,
+        columns: [],
+        metadata: {},
+      },
+    ],
+    ["l'ancienne", "directrice", "commerciale", "?"],
+    1
+  );
+
+  assert.equal(matched?.id, "dictation-leading-mistake");
+});
+
+test("matchDictationExercise matches the short dictation sentence visible around the input", () => {
+  const matched = matchDictationExercise(
+    [
+      {
+        id: "dictation-visible-short",
+        kind: "click_on_mistake",
+        sentence: [
+          { text: "Ils" },
+          { text: "bavardes", mistake: true, clue: true },
+          { text: "devant l'entrée de l'immeuble." },
+        ],
+        corrections: [
+          [
+            { text: "Ils" },
+            { text: "bavardent" },
+            { text: "devant l'entrée de l'immeuble." },
+          ],
+        ],
+        hasMistake: true,
+        columns: [],
+        metadata: {},
+      },
+    ],
+    ["Ils", "devant l'entrée de l'immeuble."],
+    1
+  );
+
+  assert.equal(matched?.id, "dictation-visible-short");
+});
+
 test("deriveExactClickDecision exposes exact click decisions for mistake, no-mistake and target-word flows", () => {
   assert.deepEqual(deriveExactClickDecision(clickOnMistakeExercise), {
     kind: "click_word",
@@ -100,6 +190,52 @@ test("deriveExactClickDecision exposes exact click decisions for mistake, no-mis
     source: "fiber_exact_dom_located",
     reason: "Mot trouvé directement sur la page.",
   });
+});
+
+test("deriveExactDictationDecision fills missing words from corrections or clues", () => {
+  assert.deepEqual(
+    deriveExactDictationDecision({
+      id: "dictation-mistake",
+      kind: "click_on_mistake",
+      sentence: [
+        { text: "Il ne manquait plus que" },
+        { text: "sa", mistake: true, clue: true },
+        { text: "!" },
+      ],
+      corrections: [
+        [
+          { text: "Il ne manquait plus que" },
+          { text: "ça" },
+          { text: "!" },
+        ],
+      ],
+      hasMistake: true,
+      columns: [],
+      metadata: {},
+    }),
+    {
+      kind: "fill_dictation",
+      values: ["ça"],
+      source: "fiber_exact_dom_located",
+      reason: "Réponse de dictée trouvée dans les corrections exactes.",
+    }
+  );
+
+  assert.deepEqual(
+    deriveExactDictationDecision({
+      id: "dictation-no-mistake",
+      kind: "click_on_mistake",
+      sentence: [
+        { text: "Est-il possible" },
+        { text: "d'en", clue: true },
+        { text: "mettre trois autres ici ?" },
+      ],
+      hasMistake: false,
+      columns: [],
+      metadata: {},
+    })?.values,
+    ["d'en"]
+  );
 });
 
 test("buildDragAndDropAssignments maps each normalized word to its target column", () => {

@@ -6,9 +6,11 @@ import {
 } from "./normalization";
 import type {
   CorrectedSentence,
+  ClickSolveDecision,
+  DictationSolveDecision,
   ExerciseKind,
+  ExerciseSentencePart,
   ExerciseSnapshot,
-  SolveDecision,
   WordRangeSnapshot,
 } from "./types";
 
@@ -63,6 +65,85 @@ export function matchClickExercise(
   return bestScore >= 0.6 ? bestMatch : null;
 }
 
+function isDictationMissingPart(
+  exercise: ExerciseSnapshot,
+  part: ExerciseSentencePart
+): boolean {
+  return (
+    (exercise.hasMistake !== false && part.mistake === true) ||
+    (exercise.hasMistake === false && part.clue === true)
+  );
+}
+
+export function matchDictationExercise(
+  exercises: ExerciseSnapshot[],
+  displayedWords: string[],
+  inputCount: number
+): ExerciseSnapshot | null {
+  if (displayedWords.length === 0 || inputCount === 0) {
+    return null;
+  }
+
+  const displayedText = normalizeSentence(displayedWords.join(" "));
+  const displayedStripped = stripPunctuation(displayedText);
+
+  if (!displayedStripped) {
+    return null;
+  }
+
+  let bestMatch: ExerciseSnapshot | null = null;
+  let bestScore = 0;
+
+  for (const exercise of exercises) {
+    if (exercise.kind !== "click_on_mistake") {
+      continue;
+    }
+
+    const visibleParts = exercise.sentence.filter(
+      (part) => !isDictationMissingPart(exercise, part)
+    );
+    const missingPartCount = exercise.sentence.length - visibleParts.length;
+
+    if (missingPartCount !== inputCount) {
+      continue;
+    }
+
+    const candidateText = normalizeSentence(buildSentenceFromParts(visibleParts));
+    const candidateStripped = stripPunctuation(candidateText);
+
+    if (!candidateStripped) {
+      continue;
+    }
+
+    if (
+      candidateText === displayedText ||
+      candidateStripped === displayedStripped ||
+      candidateText.includes(displayedText) ||
+      displayedText.includes(candidateText) ||
+      candidateStripped.includes(displayedStripped) ||
+      displayedStripped.includes(candidateStripped)
+    ) {
+      return exercise;
+    }
+
+    const exerciseWords = candidateStripped.split(/\s+/).filter(Boolean);
+    const visibleWords = displayedStripped.split(/\s+/).filter(Boolean);
+    if (exerciseWords.length === 0 || visibleWords.length === 0) {
+      continue;
+    }
+
+    const matches = visibleWords.filter((word) => exerciseWords.includes(word)).length;
+    const score = matches / Math.max(exerciseWords.length, visibleWords.length);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = exercise;
+    }
+  }
+
+  return bestScore >= 0.5 ? bestMatch : null;
+}
+
 export function matchDragAndDropExercise(
   exercises: ExerciseSnapshot[],
   displayedCards: string[]
@@ -94,7 +175,7 @@ export function matchDragAndDropExercise(
 
 export function deriveExactClickDecision(
   exercise: ExerciseSnapshot
-): SolveDecision | null {
+): ClickSolveDecision | null {
   if (exercise.kind === "click_on_mistake") {
     if (exercise.hasMistake === false) {
       return {
@@ -148,6 +229,40 @@ export function deriveExactClickDecision(
   return null;
 }
 
+export function deriveExactDictationDecision(
+  exercise: ExerciseSnapshot
+): DictationSolveDecision | null {
+  if (exercise.kind !== "click_on_mistake") {
+    return null;
+  }
+
+  const firstCorrection = exercise.corrections?.[0] ?? [];
+  const values = exercise.sentence
+    .map((part, index) => {
+      if (!isDictationMissingPart(exercise, part)) {
+        return null;
+      }
+
+      const correctedPart =
+        exercise.hasMistake !== false ? firstCorrection[index] : part;
+      const text = correctedPart?.text ?? part.text;
+
+      return stripHtml(text);
+    })
+    .filter((value): value is string => Boolean(value));
+
+  if (values.length === 0) {
+    return null;
+  }
+
+  return {
+    kind: "fill_dictation",
+    values,
+    source: "fiber_exact_dom_located",
+    reason: "Réponse de dictée trouvée dans les corrections exactes.",
+  };
+}
+
 export function buildDragAndDropAssignments(
   exercise: ExerciseSnapshot
 ): Map<string, string> {
@@ -174,7 +289,7 @@ export function deriveReversoFallbackDecision(
   sentenceText: string,
   displayedWords: WordRangeSnapshot[],
   analysis: CorrectedSentence
-): SolveDecision | null {
+): ClickSolveDecision | null {
   if (analysis.corrections.length === 0) {
     return {
       kind: "click_no_mistake",

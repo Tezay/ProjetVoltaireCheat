@@ -12,9 +12,11 @@ import {
 import {
   buildDragAndDropAssignments,
   canUseReversoFallback,
+  deriveExactDictationDecision,
   deriveExactClickDecision,
   deriveReversoFallbackDecision,
   matchClickExercise,
+  matchDictationExercise,
   matchDragAndDropExercise,
 } from "./matching";
 import {
@@ -25,10 +27,13 @@ import {
   locateDropZonesByColumns,
   locateNextDragPlacement,
   locateWordElement,
+  fillTextInputInPage,
   readClickQuestionSurface,
+  readDictationSurface,
   readPageButtons,
   readVisibleDragCards,
   type ClickQuestionSurface,
+  type DictationSurface,
   type PageButtons,
   type VisibleDragCard,
 } from "./page-dom";
@@ -54,6 +59,7 @@ interface SolveContext {
   pageButtons: PageButtons;
   pageKind: ReturnType<typeof getPageKindFromLocation>;
   clickQuestion: ClickQuestionSurface | null;
+  dictationSurface: DictationSurface | null;
   dragCards: VisibleDragCard[];
   matchedExercise: ExerciseSnapshot | null;
   currentExerciseKind: ExerciseKind | null;
@@ -190,8 +196,9 @@ export class SolverController {
     this.updateSessionBoundary(pageKind);
 
     const pageButtons = readPageButtons();
+    const dictationSurface = readDictationSurface();
     const clickQuestion = readClickQuestionSurface();
-    const dragCards = clickQuestion ? [] : readVisibleDragCards();
+    const dragCards = clickQuestion || dictationSurface ? [] : readVisibleDragCards();
     const exactSnapshot =
       pageKind === "unsupported" || this.settings.reversoOnlyMode
         ? null
@@ -199,7 +206,13 @@ export class SolverController {
     const exercises = exactSnapshot?.exercises ?? [];
 
     let matchedExercise: ExerciseSnapshot | null = null;
-    if (!this.settings.reversoOnlyMode && clickQuestion) {
+    if (!this.settings.reversoOnlyMode && dictationSurface) {
+      matchedExercise = matchDictationExercise(
+        exercises,
+        dictationSurface.words.map((word) => word.text),
+        dictationSurface.inputs.length
+      );
+    } else if (!this.settings.reversoOnlyMode && clickQuestion) {
       matchedExercise = matchClickExercise(
         exercises,
         clickQuestion.words.map((word) => word.text)
@@ -217,11 +230,14 @@ export class SolverController {
         ? clickQuestion.noMistakeButton
           ? "click_on_mistake"
           : "unknown"
-        : dragCards.length >= 2
-          ? "drag_and_drop"
-          : null);
+        : dictationSurface
+          ? "click_on_mistake"
+          : dragCards.length >= 2
+            ? "drag_and_drop"
+            : null);
     const fallbackAllowed =
       clickQuestion !== null &&
+      dictationSurface === null &&
       canUseReversoFallback(
         currentExerciseKind,
         Boolean(clickQuestion.noMistakeButton)
@@ -248,16 +264,17 @@ export class SolverController {
     const questionFingerprint =
       dragCards.length > 0
         ? dragCards.map((card) => card.normalizedText).sort().join("|")
-        : clickQuestion?.sentenceText ?? null;
+        : dictationSurface?.sentenceText || clickQuestion?.sentenceText || null;
     const questionLabel =
       dragCards.length > 0
         ? `Classement (${dragCards.length} element${dragCards.length > 1 ? "s" : ""})`
-        : clickQuestion?.sentenceText ?? null;
+        : dictationSurface?.sentenceText || clickQuestion?.sentenceText || null;
 
     return {
       pageButtons,
       pageKind,
       clickQuestion,
+      dictationSurface,
       dragCards,
       matchedExercise,
       currentExerciseKind,
@@ -433,7 +450,7 @@ export class SolverController {
       return this.buildResponse(true, "Popup audio désactivé.");
     }
 
-    if (context.pageButtons.cantListenButton) {
+    if (context.pageButtons.cantListenButton && !context.dictationSurface) {
       clickElementInMainWorld(context.pageButtons.cantListenButton);
       this.awaitingValidationFingerprint = null;
       this.lastPauseKey = null;
@@ -533,6 +550,10 @@ export class SolverController {
       const immediateButtonResponse = this.handleImmediateButtons(context);
       if (immediateButtonResponse) {
         return immediateButtonResponse;
+      }
+
+      if (context.dictationSurface) {
+        return this.solveDictation(context, trigger);
       }
 
       if (context.dragCards.length > 0) {
@@ -658,6 +679,59 @@ export class SolverController {
     });
 
     return this.buildResponse(true, "Placement exact effectue.");
+  }
+
+  private solveDictation(
+    context: SolveContext,
+    trigger: SolveTrigger
+  ): ContentResponseMessage {
+    if (!context.dictationSurface) {
+      return this.buildResponse(false, "Aucune dictée détectée.");
+    }
+
+    if (!context.matchedExercise) {
+      return this.handlePause(
+        context,
+        trigger,
+        "La dictée est visible, mais l'exercice exact n'a pas pu être identifié."
+      );
+    }
+
+    const decision = deriveExactDictationDecision(context.matchedExercise);
+    if (!decision || decision.values.length !== context.dictationSurface.inputs.length) {
+      return this.handlePause(
+        context,
+        trigger,
+        "La dictée est visible, mais la réponse exacte n'est pas disponible."
+      );
+    }
+
+    decision.values.forEach((value, index) => {
+      const input = context.dictationSurface?.inputs[index];
+
+      if (input) {
+        fillTextInputInPage(input, value);
+      }
+    });
+
+    if (context.dictationSurface.validateButton) {
+      clickElementInMainWorld(context.dictationSurface.validateButton);
+    } else {
+      this.awaitingValidationFingerprint = context.questionFingerprint;
+    }
+
+    this.lastPauseKey = null;
+    this.bumpStats("exact");
+    this.recordOutcome("solved", decision.reason, decision.source);
+    showInfoCard({
+      badge: "Exact",
+      title: "Dictée complétée",
+      message: `Réponse saisie automatiquement: ${decision.values.join(" / ")}`,
+      answerSource: decision.source,
+      tone: "exact",
+    });
+
+    return this.buildResponse(true, decision.reason);
   }
 
   private async solveClickQuestion(

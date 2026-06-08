@@ -73,6 +73,13 @@ export interface PageButtons {
   validateButton: HTMLElement | null;
 }
 
+export interface DictationSurface {
+  inputs: HTMLInputElement[];
+  sentenceText: string;
+  words: VisibleWordElement[];
+  validateButton: HTMLElement | null;
+}
+
 function normalizeUiText(value: string): string {
   return normalizeWhitespace(value)
     .replace(/[\u2018\u2019\u02BC\u0060]/g, "'")
@@ -314,6 +321,16 @@ function buildSentenceSurface(elements: HTMLElement[]): {
   };
 }
 
+function isInsideButton(element: HTMLElement): boolean {
+  return Boolean(
+    element.closest("button, [data-testid='button'], div[role='button']")
+  );
+}
+
+function isInputAncestor(element: HTMLElement, inputs: HTMLInputElement[]): boolean {
+  return inputs.some((input) => element.contains(input));
+}
+
 function isUiWordCandidate(element: HTMLElement, noMistakeButton: HTMLElement | null): boolean {
   const rawText = getElementText(element);
   const normalizedText = normalizeUiText(rawText);
@@ -331,6 +348,56 @@ function isUiWordCandidate(element: HTMLElement, noMistakeButton: HTMLElement | 
   );
 }
 
+function collectDictationSentenceWordElements(
+  inputs: HTMLInputElement[]
+): HTMLElement[] {
+  const firstInput = inputs[0];
+  if (!firstInput) {
+    return [];
+  }
+
+  let currentElement = firstInput.parentElement;
+
+  while (currentElement && currentElement !== document.body) {
+    const containsAllInputs = inputs.every((input) => currentElement?.contains(input));
+    if (!containsAllInputs) {
+      currentElement = currentElement.parentElement;
+      continue;
+    }
+
+    const words = Array.from(
+      currentElement.querySelectorAll<HTMLElement>(LEGACY_WORD_SELECTOR)
+    )
+      .filter(isVisible)
+      .filter((element) => {
+        const text = getElementText(element);
+        const normalizedText = normalizeUiText(text);
+        const style = window.getComputedStyle(element);
+        const fontSize = Number.parseFloat(style.fontSize || "0");
+
+        return (
+          text.length > 0 &&
+          text.length < 120 &&
+          fontSize >= 18 &&
+          !element.querySelector("svg") &&
+          !isInsideButton(element) &&
+          !isInputAncestor(element, inputs) &&
+          !UI_WORD_EXCLUSIONS.some((excludedText) =>
+            normalizedText.includes(excludedText)
+          )
+        );
+      });
+
+    if (words.length > 0) {
+      return words;
+    }
+
+    currentElement = currentElement.parentElement;
+  }
+
+  return [];
+}
+
 export function readPageButtons(): PageButtons {
   return {
     audioDisableButton: findButtonByExactTexts(["DESACTIVER", "DÉSACTIVER"]),
@@ -341,6 +408,28 @@ export function readPageButtons(): PageButtons {
       "PAS ÉCOUTER",
     ]),
     advanceButton: findButtonContainingTexts(ADVANCE_BUTTON_TEXTS),
+    validateButton: findButtonContainingTexts(["VALIDER"]),
+  };
+}
+
+export function readDictationSurface(): DictationSurface | null {
+  const inputs = Array.from(
+    document.querySelectorAll<HTMLInputElement>(
+      'input[data-testid="text-input-flat"], input[type="text"]'
+    )
+  ).filter(isVisible);
+
+  if (inputs.length === 0) {
+    return null;
+  }
+
+  const sentenceWordElements = collectDictationSentenceWordElements(inputs);
+  const { words, sentenceText } = buildSentenceSurface(sentenceWordElements);
+
+  return {
+    inputs,
+    sentenceText,
+    words,
     validateButton: findButtonContainingTexts(["VALIDER"]),
   };
 }
@@ -463,6 +552,25 @@ export function clickElementInMainWorld(element: HTMLElement): void {
   const y = rect.top + rect.height / 2;
 
   dispatchMainWorldClickAt(x, y);
+}
+
+export function fillTextInputInPage(input: HTMLInputElement, value: string): void {
+  const valueSetter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value"
+  )?.set;
+
+  input.focus();
+
+  if (valueSetter) {
+    valueSetter.call(input, value);
+  } else {
+    input.value = value;
+  }
+
+  input.dispatchEvent(new InputEvent("input", { bubbles: true, data: value }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  input.blur();
 }
 
 export function locateDropZonesByColumns(

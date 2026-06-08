@@ -2,7 +2,7 @@
 
 Extension Chrome qui résout automatiquement les exercices **Projet Voltaire** et **Académie Voltaire** à votre place.
 
-Version actuelle : **3.0.0**
+Version actuelle : **3.1.0**
 
 ---
 
@@ -20,10 +20,12 @@ Elle gère tous les types d'exercices :
 | Phrase avec ou sans faute | Lecture directe, puis Reverso si nécessaire |
 | Mot à trouver | Lecture directe uniquement |
 | Classement (glisser-déposer) | Lecture directe uniquement |
+| Dictée audio avec mot(s) à écrire | Lecture directe uniquement |
 | Écrans de transition (Suivant, Continuer…) | Passage automatique |
-| Popups audio (Désactiver, Je ne peux pas écouter…) | Contournement automatique |
 
 Si aucune méthode ne fonctionne sur une question, l'extension s'arrête plutôt que de répondre au hasard.
+
+Depuis la version **3.1.0**, les exercices où il faut écouter une phrase puis écrire le ou les mots manquants sont également pris en charge. L'extension identifie la phrase visible autour des champs de saisie, remplit la bonne réponse, puis valide.
 
 ---
 
@@ -109,6 +111,7 @@ Depuis ce panneau vous pouvez :
 ## Limitations
 
 - **Lecture directe dépendante de Projet Voltaire** : Si Projet Voltaire modifie en profondeur son application, la lecture directe peut cesser de fonctionner. L'extension bascule alors sur Reverso, ou se met en pause.
+- **Dictées audio en lecture directe uniquement** : Les exercices de dictée audio sont résolus seulement si la réponse exacte est présente dans l'état React/Fiber de la page. Aucun fallback Reverso n'est utilisé pour ce type d'exercice.
 - **Reverso n'est pas parfait** : L'API Reverso peut se tromper, notamment sur les phrases avec des noms propres, du vocabulaire rare, ou des tournures complexes. C'est pourquoi l'extension ne l'utilise que comme solution de repli.
 - **Fonctionne uniquement sur Chrome** : L'extension est au format Manifest V3 Chrome. Elle n'est pas compatible Firefox ou Safari sans adaptation.
 

@@ -97,6 +97,7 @@ export interface ExerciseSnapshot {
   id: string;
   kind: ExerciseKind;
   sentence: ExerciseSentencePart[];
+  corrections?: ExerciseSentencePart[][];
   hasMistake?: boolean;
   columns: ExerciseColumnSnapshot[];
   metadata: {
@@ -127,7 +128,23 @@ export type SolveDecision =
     kind: "click_no_mistake";
     source: AnswerSource;
     reason: string;
+  }
+  | {
+    kind: "fill_dictation";
+    values: string[];
+    source: AnswerSource;
+    reason: string;
   };
+
+export type ClickSolveDecision = Extract<
+  SolveDecision,
+  { kind: "click_word" | "click_no_mistake" }
+>;
+
+export type DictationSolveDecision = Extract<
+  SolveDecision,
+  { kind: "fill_dictation" }
+>;
 
 export const SHORTCUT_STORAGE_KEY = "shortcutConfig";
 export const SOLVER_SETTINGS_STORAGE_KEY = "solverSettings";
