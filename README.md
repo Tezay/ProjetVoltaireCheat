@@ -2,7 +2,7 @@
 
 Extension Chrome qui résout automatiquement les exercices **Projet Voltaire** et **Académie Voltaire** à votre place.
 
-Version actuelle : **3.1.1**
+https://github.com/user-attachments/assets/a0194dad-b85a-4535-a2aa-179321bc205f
 
 ---
 
