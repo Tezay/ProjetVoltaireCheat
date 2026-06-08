@@ -2,7 +2,7 @@
 
 Extension Chrome qui résout automatiquement les exercices **Projet Voltaire** et **Académie Voltaire** à votre place.
 
-Version actuelle : **3.1.0**
+Version actuelle : **3.1.1**
 
 ---
 
@@ -21,11 +21,10 @@ Elle gère tous les types d'exercices :
 | Mot à trouver | Lecture directe uniquement |
 | Classement (glisser-déposer) | Lecture directe uniquement |
 | Dictée audio avec mot(s) à écrire | Lecture directe uniquement |
+| Session d'évaluation | Reverso quand la lecture directe est indisponible |
 | Écrans de transition (Suivant, Continuer…) | Passage automatique |
 
 Si aucune méthode ne fonctionne sur une question, l'extension s'arrête plutôt que de répondre au hasard.
-
-Depuis la version **3.1.0**, les exercices où il faut écouter une phrase puis écrire le ou les mots manquants sont également pris en charge. L'extension identifie la phrase visible autour des champs de saisie, remplit la bonne réponse, puis valide.
 
 ---
 

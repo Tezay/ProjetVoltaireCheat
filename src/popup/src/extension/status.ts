@@ -52,6 +52,8 @@ export function getPageLabel(pageKind: PageKind): string {
       return "Exercice";
     case "training":
       return "Entraînement";
+    case "evaluation":
+      return "Évaluation";
     default:
       return "Hors exercice";
   }

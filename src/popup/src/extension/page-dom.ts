@@ -116,6 +116,10 @@ export function getPageKindFromLocation(url = window.location.href): PageKind {
     return "training";
   }
 
+  if (url.includes("/evaluation")) {
+    return "evaluation";
+  }
+
   return "unsupported";
 }
 
@@ -181,6 +185,45 @@ function collectLegacySentenceWordElements(): HTMLElement[] {
   )[0];
 
   return bestGroup && bestGroup.length >= 3 ? bestGroup : [];
+}
+
+function collectSentenceBlockElement(
+  noMistakeButton: HTMLElement | null
+): HTMLElement[] {
+  const candidates = Array.from(
+    document.querySelectorAll<HTMLElement>(
+      `${LEGACY_SENTENCE_CONTAINER_SELECTOR}, div[dir="auto"].css-146c3p1, span[dir="auto"].css-146c3p1`
+    )
+  )
+    .filter(isVisible)
+    .filter((element) => {
+      const text = getElementText(element);
+      const normalizedText = normalizeUiText(text);
+      const style = window.getComputedStyle(element);
+      const fontSize = Number.parseFloat(style.fontSize || "0");
+
+      return (
+        text.length >= 12 &&
+        text.length <= 260 &&
+        fontSize >= 18 &&
+        element !== noMistakeButton &&
+        !element.contains(noMistakeButton) &&
+        !element.querySelector("svg") &&
+        !isInsideButton(element) &&
+        !UI_WORD_EXCLUSIONS.some((excludedText) =>
+          normalizedText.includes(excludedText)
+        )
+      );
+    });
+
+  const bestCandidate = candidates.sort((leftElement, rightElement) => {
+    const leftTextLength = getElementText(leftElement).length;
+    const rightTextLength = getElementText(rightElement).length;
+
+    return rightTextLength - leftTextLength;
+  })[0];
+
+  return bestCandidate ? [bestCandidate] : [];
 }
 
 function findButtonByExactTexts(texts: string[]): HTMLElement | null {
@@ -457,12 +500,16 @@ export function readClickQuestionSurface(): ClickQuestionSurface | null {
     legacyWordElements.length >= 3
       ? legacyWordElements
       : wordCandidates.filter((element) => isUiWordCandidate(element, noMistakeButton));
+  const sentenceElements =
+    sentenceWordElements.length >= 3
+      ? sentenceWordElements
+      : collectSentenceBlockElement(noMistakeButton);
 
-  if (sentenceWordElements.length < 3) {
+  if (sentenceElements.length === 0) {
     return null;
   }
 
-  const { words, sentenceText } = buildSentenceSurface(sentenceWordElements);
+  const { words, sentenceText } = buildSentenceSurface(sentenceElements);
 
   return {
     sentenceText,

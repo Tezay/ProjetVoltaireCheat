@@ -22,7 +22,11 @@ interface FiberNodeLike {
 function isSupportedPage(): boolean {
   const url = window.location.href;
 
-  return url.includes("/exercice") || url.includes("/entrainement");
+  return (
+    url.includes("/exercice") ||
+    url.includes("/entrainement") ||
+    url.includes("/evaluation")
+  );
 }
 
 function extractFiberFromReactCarrier(carrier: unknown): FiberNodeLike | null {

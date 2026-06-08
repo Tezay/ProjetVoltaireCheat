@@ -19,7 +19,7 @@ export interface ShortcutConfig {
   metaKey: boolean;
 }
 
-export type PageKind = "unsupported" | "exercise" | "training";
+export type PageKind = "unsupported" | "exercise" | "training" | "evaluation";
 
 export type ExerciseKind =
   | "click_on_mistake"
