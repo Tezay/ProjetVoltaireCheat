@@ -325,7 +325,7 @@ export function App() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-100">
-              v3.1.1
+              v3.2.0
             </div>
             <h1 className="mt-1 text-lg font-bold">Projet Voltaire Cheat</h1>
           </div>
