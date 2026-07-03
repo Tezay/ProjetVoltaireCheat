@@ -45,6 +45,8 @@ export async function setStoredSolverSettings(
     ...currentSettings,
     ...partialSettings,
     shortcutConfig: partialSettings.shortcutConfig ?? currentSettings.shortcutConfig,
+    discreetShortcutConfig:
+      partialSettings.discreetShortcutConfig ?? currentSettings.discreetShortcutConfig,
   });
 
   const syncStorage = getStorageArea("sync");

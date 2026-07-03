@@ -68,6 +68,10 @@ Cliquez sur le bouton **Corriger cette question** pour résoudre uniquement la q
 
 Un raccourci clavier permet de déclencher la correction d'une question sans ouvrir la popup. Par défaut la touche est **V** (désactivé par défaut, à activer dans les réglages avancés). Il peut être modifié ou réinitialisé depuis la popup.
 
+### Raccourci discret
+
+Un second raccourci, indépendant du précédent, résout la question en cours sans afficher aucune carte de retour à l'écran. Par défaut la touche est **B** (désactivé par défaut). Ponctuel uniquement : il n'existe pas de version automatique de ce mode.
+
 ---
 
 ## Ce qu'affiche la popup
@@ -104,6 +108,8 @@ Depuis ce panneau vous pouvez :
 - **Activer ou désactiver** le raccourci.
 - **Modifier** la touche (cliquez sur Modifier puis appuyez sur la combinaison souhaitée).
 - **Réinitialiser** sur la touche V par défaut.
+
+Le **raccourci discret** se règle de la même façon, juste en dessous, et se réinitialise sur la touche B.
 
 ---
 

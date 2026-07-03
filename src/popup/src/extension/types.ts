@@ -39,12 +39,13 @@ export type ExactCapability =
   | "unavailable"
   | "unsupported";
 
-export type SolveTrigger = "auto" | "popup" | "shortcut";
+export type SolveTrigger = "auto" | "popup" | "shortcut" | "discreetShortcut";
 
 export interface SolverSettings {
   autoSolveEnabled: boolean;
   reversoOnlyMode: boolean;
   shortcutConfig: ShortcutConfig;
+  discreetShortcutConfig: ShortcutConfig;
   delayMinMs: number;
   delayMaxMs: number;
   exactErrorRate: number;
@@ -159,10 +160,20 @@ export const DEFAULT_SHORTCUT_CONFIG: ShortcutConfig = {
   metaKey: false,
 };
 
+export const DEFAULT_DISCREET_SHORTCUT_CONFIG: ShortcutConfig = {
+  enabled: false,
+  key: "B",
+  ctrlKey: false,
+  altKey: false,
+  shiftKey: false,
+  metaKey: false,
+};
+
 export const DEFAULT_SOLVER_SETTINGS: SolverSettings = {
   autoSolveEnabled: false,
   reversoOnlyMode: false,
   shortcutConfig: DEFAULT_SHORTCUT_CONFIG,
+  discreetShortcutConfig: DEFAULT_DISCREET_SHORTCUT_CONFIG,
   delayMinMs: 1000,
   delayMaxMs: 2000,
   exactErrorRate: 0,

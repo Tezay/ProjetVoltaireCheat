@@ -4,6 +4,7 @@ import {
 } from "./extension-context";
 import { requestExactSnapshotFromMainWorld } from "./bridge";
 import {
+  hideCard,
   showError,
   showFallbackAnalysisCard,
   showInfoCard,
@@ -83,6 +84,8 @@ export class SolverController {
   private lastSupportedPage = false;
 
   private lastPauseKey: string | null = null;
+
+  private silentMode = false;
 
   constructor() {
     this.settings = normalizeSolverSettings();
@@ -399,6 +402,33 @@ export class SolverController {
     }
   }
 
+  private cardShowLoading(message: string): void {
+    if (!this.silentMode) {
+      showLoading(message);
+    }
+  }
+
+  private cardShowInfoCard(params: Parameters<typeof showInfoCard>[0]): void {
+    if (!this.silentMode) {
+      showInfoCard(params);
+    }
+  }
+
+  private cardShowError(message: string): void {
+    if (!this.silentMode) {
+      showError(message);
+    }
+  }
+
+  private cardShowFallbackAnalysisCard(
+    sentence: string,
+    analysis: Parameters<typeof showFallbackAnalysisCard>[1]
+  ): void {
+    if (!this.silentMode) {
+      showFallbackAnalysisCard(sentence, analysis);
+    }
+  }
+
   private handlePause(
     context: SolveContext,
     trigger: SolveTrigger,
@@ -416,7 +446,7 @@ export class SolverController {
     }
 
     if (trigger !== "auto" || shouldCountPause) {
-      showInfoCard({
+      this.cardShowInfoCard({
         badge: "Pause",
         title: "Pause automatique",
         message,
@@ -439,7 +469,7 @@ export class SolverController {
         "Popup audio désactivée automatiquement.",
         "system"
       );
-      showInfoCard({
+      this.cardShowInfoCard({
         badge: "Système",
         title: "Audio désactivé",
         message: "Le popup de fonctionnalités sonores a été fermé automatiquement.",
@@ -460,7 +490,7 @@ export class SolverController {
         "Option audio contournée automatiquement.",
         "system"
       );
-      showInfoCard({
+      this.cardShowInfoCard({
         badge: "Système",
         title: "Audio contournée",
         message: "Le bouton 'Je ne peux pas écouter' a été utilisé automatiquement.",
@@ -482,7 +512,7 @@ export class SolverController {
         "Ecran intermediaire ou correction passe automatiquement.",
         "system"
       );
-      showInfoCard({
+      this.cardShowInfoCard({
         badge: "Système",
         title: "Transition automatique",
         message:
@@ -503,7 +533,7 @@ export class SolverController {
       this.awaitingValidationFingerprint = null;
       this.lastPauseKey = null;
       this.recordOutcome("solved", "Réponse validée automatiquement.", "system");
-      showInfoCard({
+      this.cardShowInfoCard({
         badge: "Validation",
         title: "Validation envoyée",
         message: "La réponse sélectionnée a été validée automatiquement.",
@@ -523,13 +553,18 @@ export class SolverController {
     }
 
     this.status.isBusy = true;
+    this.silentMode = trigger === "discreetShortcut";
+    if (this.silentMode) {
+      hideCard();
+    }
+
     const loadingMessage =
       trigger === "auto"
         ? "Auto-résolution en cours..."
         : "Résolution de la question en cours...";
 
     if (trigger !== "auto") {
-      showLoading(loadingMessage);
+      this.cardShowLoading(loadingMessage);
     }
 
     try {
@@ -540,7 +575,7 @@ export class SolverController {
         const message =
           "Ouvrez un exercice Projet Voltaire, puis rechargez la page si l'extension vient d'être mise a jour.";
         if (trigger !== "auto") {
-          showError(message);
+          this.cardShowError(message);
         }
         this.recordOutcome("error", message, "system");
 
@@ -568,13 +603,14 @@ export class SolverController {
         context.pageKind
       ).toLowerCase()}.`;
       if (trigger !== "auto") {
-        showError(message);
+        this.cardShowError(message);
       }
       this.recordOutcome("error", message, "system");
 
       return this.buildResponse(false, message);
     } finally {
       this.status.isBusy = false;
+      this.silentMode = false;
     }
   }
 
@@ -609,7 +645,7 @@ export class SolverController {
           "Classement finalisé et validé automatiquement.",
           "fiber_exact_dom_located"
         );
-        showInfoCard({
+        this.cardShowInfoCard({
           badge: "Exact",
           title: "Classement validé",
           message: "Tous les élements ont été placés puis la réponse a été validée.",
@@ -650,7 +686,7 @@ export class SolverController {
           `Erreur simulee: "${nextPlacement.card.text}" a été envoyé vers la mauvaise colonne.`,
           "fiber_exact_dom_located"
         );
-        showInfoCard({
+        this.cardShowInfoCard({
           badge: "Exact",
           title: "Erreur simulee",
           message: `"${nextPlacement.card.text}" a été placé volontairement dans une mauvaise colonne.`,
@@ -670,7 +706,7 @@ export class SolverController {
       `Placement exact de "${nextPlacement.card.text}".`,
       "fiber_exact_dom_located"
     );
-    showInfoCard({
+    this.cardShowInfoCard({
       badge: "Exact",
       title: "Placement exact",
       message: `"${nextPlacement.card.text}" -> "${nextPlacement.zone.columnInstruction}"`,
@@ -723,7 +759,7 @@ export class SolverController {
     this.lastPauseKey = null;
     this.bumpStats("exact");
     this.recordOutcome("solved", decision.reason, decision.source);
-    showInfoCard({
+    this.cardShowInfoCard({
       badge: "Exact",
       title: "Dictée complétée",
       message: `Réponse saisie automatiquement: ${decision.values.join(" / ")}`,
@@ -789,7 +825,7 @@ export class SolverController {
     if (fallbackResponse.type === "analysisError") {
       const message = fallbackResponse.message;
       if (trigger !== "auto") {
-        showError(message);
+        this.cardShowError(message);
       }
       this.recordOutcome("error", message, "system");
 
@@ -829,7 +865,7 @@ export class SolverController {
       );
     }
 
-    showFallbackAnalysisCard(
+    this.cardShowFallbackAnalysisCard(
       context.clickQuestion.sentenceText,
       fallbackResponse.value
     );
@@ -895,7 +931,7 @@ export class SolverController {
     if (exactSource) {
       this.bumpStats("exact");
       this.recordOutcome("solved", decision.reason, decision.source);
-      showInfoCard({
+      this.cardShowInfoCard({
         badge: "Exact",
         title:
           decision.kind === "click_no_mistake"
@@ -937,7 +973,7 @@ export class SolverController {
     }
 
     clickElementInMainWorld(wrongElement);
-    showInfoCard({
+    this.cardShowInfoCard({
       badge: "Exact",
       title: "Erreur de test",
       message:

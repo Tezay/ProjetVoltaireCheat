@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import Button from "./components/Button";
 import InfoPill from "./components/InfoPill";
 import MetricTile from "./components/MetricTile";
+import ShortcutEditorCard from "./components/ShortcutEditorCard";
 import Switch from "./components/Switch";
+import { useShortcutCapture } from "./hooks/useShortcutCapture";
 import {
   normalizeDelayMs,
   normalizeExactErrorRate,
@@ -16,11 +18,9 @@ import {
   getStoredSolverSettings,
   setStoredSolverSettings,
 } from "./extension/storage";
+import { formatShortcut } from "./extension/shortcut";
 import {
-  formatShortcut,
-  shortcutFromKeyboardEvent,
-} from "./extension/shortcut";
-import {
+  DEFAULT_DISCREET_SHORTCUT_CONFIG,
   DEFAULT_SHORTCUT_CONFIG,
   DEFAULT_SOLVER_SETTINGS,
   type ContentResponseMessage,
@@ -122,6 +122,7 @@ export function App() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [solvingNow, setSolvingNow] = useState(false);
   const [capturingShortcut, setCapturingShortcut] = useState(false);
+  const [capturingDiscreetShortcut, setCapturingDiscreetShortcut] = useState(false);
   const [delayDraft, setDelayDraft] = useState({
     min: String(DEFAULT_SOLVER_SETTINGS.delayMinMs / 1000),
     max: String(DEFAULT_SOLVER_SETTINGS.delayMaxMs / 1000),
@@ -180,40 +181,31 @@ export function App() {
     };
   }, [settings]);
 
-  useEffect(() => {
-    if (!capturingShortcut) {
-      return;
-    }
-
-    function handleShortcutCapture(event: KeyboardEvent) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const nextShortcut = shortcutFromKeyboardEvent(
-        event,
-        settings.shortcutConfig.enabled
-      );
-
-      if (!nextShortcut) {
-        setErrorMessage("La combinaison doit inclure une touche principale.");
-        return;
-      }
-
+  useShortcutCapture(
+    capturingShortcut,
+    settings.shortcutConfig.enabled,
+    (nextShortcut) => {
       setCapturingShortcut(false);
       void persistSettings(
-        {
-          shortcutConfig: nextShortcut,
-        },
+        { shortcutConfig: nextShortcut },
         "Nouveau raccourci enregistré."
       );
-    }
+    },
+    () => setErrorMessage("La combinaison doit inclure une touche principale.")
+  );
 
-    window.addEventListener("keydown", handleShortcutCapture, true);
-
-    return () => {
-      window.removeEventListener("keydown", handleShortcutCapture, true);
-    };
-  }, [capturingShortcut, settings.shortcutConfig.enabled]);
+  useShortcutCapture(
+    capturingDiscreetShortcut,
+    settings.discreetShortcutConfig.enabled,
+    (nextShortcut) => {
+      setCapturingDiscreetShortcut(false);
+      void persistSettings(
+        { discreetShortcutConfig: nextShortcut },
+        "Nouveau raccourci discret enregistré."
+      );
+    },
+    () => setErrorMessage("La combinaison doit inclure une touche principale.")
+  );
 
   const isBusy = loadingSettings || savingSettings || solvingNow;
   const formattedShortcut = formatShortcut(settings.shortcutConfig);
@@ -638,79 +630,85 @@ export function App() {
               </div>
             </div>
 
-            <div className="col-span-2 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Raccourci
-                  </div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900">
-                    {formattedShortcut}
-                  </div>
-                </div>
-                <InfoPill tone={settings.shortcutConfig.enabled ? "exact" : "default"}>
-                  {settings.shortcutConfig.enabled ? "Actif" : "Inactif"}
-                </InfoPill>
-              </div>
+            <ShortcutEditorCard
+              description="Ce raccourci lance une correction ponctuelle de la question en cours."
+              enabled={settings.shortcutConfig.enabled}
+              formattedShortcut={formattedShortcut}
+              isBusy={isBusy}
+              isCapturing={capturingShortcut}
+              onReset={() => {
+                setCapturingShortcut(false);
+                void persistSettings(
+                  {
+                    shortcutConfig: {
+                      ...DEFAULT_SHORTCUT_CONFIG,
+                      enabled: settings.shortcutConfig.enabled,
+                    },
+                  },
+                  "Raccourci réinitialisé sur V."
+                );
+              }}
+              onStartCapture={() => {
+                setErrorMessage(null);
+                setInfoMessage(null);
+                setCapturingShortcut((currentValue) => !currentValue);
+              }}
+              onToggleEnabled={() => {
+                setCapturingShortcut(false);
+                void persistSettings(
+                  {
+                    shortcutConfig: {
+                      ...settings.shortcutConfig,
+                      enabled: !settings.shortcutConfig.enabled,
+                    },
+                  },
+                  settings.shortcutConfig.enabled
+                    ? "Raccourci désactivé."
+                    : "Raccourci activé."
+                );
+              }}
+              title="Raccourci"
+            />
 
-              <div className="mt-3 text-xs leading-5 text-slate-600">
-                Ce raccourci lance une correction ponctuelle de la question en cours.
-              </div>
-
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                <Button
-                  disabled={isBusy}
-                  onClick={() => {
-                    setCapturingShortcut(false);
-                    void persistSettings(
-                      {
-                        shortcutConfig: {
-                          ...settings.shortcutConfig,
-                          enabled: !settings.shortcutConfig.enabled,
-                        },
-                      },
-                      settings.shortcutConfig.enabled
-                        ? "Raccourci désactivé."
-                        : "Raccourci activé."
-                    );
-                  }}
-                  variant="secondary"
-                >
-                  {settings.shortcutConfig.enabled ? "Désactiver" : "Activer"}
-                </Button>
-
-                <Button
-                  disabled={isBusy}
-                  onClick={() => {
-                    setErrorMessage(null);
-                    setInfoMessage(null);
-                    setCapturingShortcut((currentValue) => !currentValue);
-                  }}
-                  variant="subtle"
-                >
-                  {capturingShortcut ? "En attente..." : "Modifier"}
-                </Button>
-
-                <Button
-                  disabled={isBusy}
-                  onClick={() => {
-                    setCapturingShortcut(false);
-                    void persistSettings(
-                      {
-                        shortcutConfig: {
-                          ...DEFAULT_SHORTCUT_CONFIG,
-                          enabled: settings.shortcutConfig.enabled,
-                        },
-                      },
-                      "Raccourci réinitialisé sur V."
-                    );
-                  }}
-                  variant="secondary"
-                >
-                  Réinitialiser
-                </Button>
-              </div>
-            </div>
+            <ShortcutEditorCard
+              description="Corrige la question en cours sans afficher aucune carte de retour à l'écran."
+              enabled={settings.discreetShortcutConfig.enabled}
+              formattedShortcut={formatShortcut(settings.discreetShortcutConfig)}
+              isBusy={isBusy}
+              isCapturing={capturingDiscreetShortcut}
+              onReset={() => {
+                setCapturingDiscreetShortcut(false);
+                void persistSettings(
+                  {
+                    discreetShortcutConfig: {
+                      ...DEFAULT_DISCREET_SHORTCUT_CONFIG,
+                      enabled: settings.discreetShortcutConfig.enabled,
+                    },
+                  },
+                  "Raccourci discret réinitialisé sur B."
+                );
+              }}
+              onStartCapture={() => {
+                setErrorMessage(null);
+                setInfoMessage(null);
+                setCapturingDiscreetShortcut((currentValue) => !currentValue);
+              }}
+              onToggleEnabled={() => {
+                setCapturingDiscreetShortcut(false);
+                void persistSettings(
+                  {
+                    discreetShortcutConfig: {
+                      ...settings.discreetShortcutConfig,
+                      enabled: !settings.discreetShortcutConfig.enabled,
+                    },
+                  },
+                  settings.discreetShortcutConfig.enabled
+                    ? "Raccourci discret désactivé."
+                    : "Raccourci discret activé."
+                );
+              }}
+              title="Raccourci discret"
+            />
           </div>
         </details>
       </div>

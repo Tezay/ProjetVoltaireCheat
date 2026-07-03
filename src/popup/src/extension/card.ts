@@ -172,6 +172,10 @@ function renderCard(background: string, markup: string): void {
   content.innerHTML = markup;
 }
 
+export function hideCard(): void {
+  document.getElementById(CARD_ID)?.remove();
+}
+
 function sourceBadge(answerSource: AnswerSource | null): string {
   return answerSource
     ? `<span class="pvc-source-badge">${escapeHtml(getSourceLabel(answerSource))}</span>`

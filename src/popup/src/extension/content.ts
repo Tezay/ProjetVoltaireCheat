@@ -85,13 +85,17 @@ document.addEventListener("keydown", (event) => {
 
   void getStoredSolverSettings()
     .then(async (settings) => {
-      if (!matchesShortcut(event, settings.shortcutConfig)) {
+      const isDiscreetMatch = matchesShortcut(event, settings.discreetShortcutConfig);
+      const isNormalMatch =
+        !isDiscreetMatch && matchesShortcut(event, settings.shortcutConfig);
+
+      if (!isDiscreetMatch && !isNormalMatch) {
         return;
       }
 
       event.preventDefault();
       event.stopPropagation();
-      await controller.runSingleSolve("shortcut");
+      await controller.runSingleSolve(isDiscreetMatch ? "discreetShortcut" : "shortcut");
     })
     .catch((error) => {
       if (!isExtensionContextInvalidationError(error)) {

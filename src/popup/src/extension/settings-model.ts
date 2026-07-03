@@ -37,6 +37,9 @@ export function normalizeSolverSettings(
   const shortcutConfig = normalizeShortcutConfig(
     storedSettings?.shortcutConfig ?? legacyShortcut ?? DEFAULT_SOLVER_SETTINGS.shortcutConfig
   );
+  const discreetShortcutConfig = normalizeShortcutConfig(
+    storedSettings?.discreetShortcutConfig ?? DEFAULT_SOLVER_SETTINGS.discreetShortcutConfig
+  );
   const delayMinMs = normalizeDelayMs(storedSettings?.delayMinMs);
   const delayMaxMs = Math.max(
     delayMinMs,
@@ -49,6 +52,7 @@ export function normalizeSolverSettings(
     reversoOnlyMode:
       storedSettings?.reversoOnlyMode ?? DEFAULT_SOLVER_SETTINGS.reversoOnlyMode,
     shortcutConfig,
+    discreetShortcutConfig,
     delayMinMs,
     delayMaxMs,
     exactErrorRate: normalizeExactErrorRate(storedSettings?.exactErrorRate),
